@@ -1,0 +1,60 @@
+groups:
+  - name: backend_alerts
+    interval: 30s
+    rules:
+      # Backend service down
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Backend service is down"
+          description: "Backend API has been down for more than 1 minute"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="backend",status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Backend error rate is above 5% for 5 minutes"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="backend"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 1 second"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes{name=~".*backend.*"} / container_spec_memory_limit_bytes{name=~".*backend.*"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High memory usage"
+          description: "Backend container memory usage is above 90%"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name=~".*backend.*"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High CPU usage"
+          description: "Backend container CPU usage is above 80%"
+
+# Made with Bob

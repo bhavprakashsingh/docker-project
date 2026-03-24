@@ -1,0 +1,82 @@
+groups:
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # Database down
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been down for more than 1 minute"
+
+      # High connection count
+      - alert: HighConnectionCount
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connection count"
+          description: "Database connections are above 80% of max_connections"
+
+      # Slow queries
+      - alert: SlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is above 1 second"
+
+      # High disk usage
+      - alert: HighDiskUsage
+        expr: (pg_database_size_bytes / (pg_database_size_bytes + pg_tablespace_size_bytes)) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database disk usage"
+          description: "Database disk usage is above 85%"
+
+      # Replication lag (if using replication)
+      - alert: ReplicationLag
+        expr: pg_replication_lag_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High replication lag"
+          description: "Replication lag is above 30 seconds"
+
+      # Too many idle connections
+      - alert: TooManyIdleConnections
+        expr: pg_stat_activity_count{state="idle"} > 50
+        for: 10m
+        labels:
+          severity: info
+          service: database
+        annotations:
+          summary: "Too many idle connections"
+          description: "More than 50 idle database connections for 10 minutes"
+
+      # Database deadlocks
+      - alert: DatabaseDeadlocks
+        expr: rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database deadlocks detected"
+          description: "Deadlocks are occurring in the database"
+
+# Made with Bob
