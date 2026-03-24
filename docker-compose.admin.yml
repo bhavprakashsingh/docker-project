@@ -1,7 +1,7 @@
 version: '3.8'
 
 # Admin tools - separate compose file for security
-# Usage: docker-compose -f docker-compose.prod.yml -f docker-compose.admin.yml up -d
+# Usage: docker compose -f docker-compose.prod.yml -f docker-compose.admin.yml up -d
 
 services:
   # pgAdmin - Database Administration
@@ -21,21 +21,14 @@ services:
     networks:
       - backend
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+    mem_limit: 512m
+    cpus: 0.5
     logging:
       driver: "json-file"
       options:
@@ -59,14 +52,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
+    mem_limit: 256m
+    cpus: 0.5
     logging:
       driver: "json-file"
       options:

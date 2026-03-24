@@ -9,6 +9,16 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/backup_${TIMESTAMP}.sql.gz"
 RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
 
+# Support Docker secret files (POSTGRES_PASSWORD_FILE)
+if [ -z "${POSTGRES_PASSWORD}" ] && [ -n "${POSTGRES_PASSWORD_FILE}" ] && [ -f "${POSTGRES_PASSWORD_FILE}" ]; then
+    POSTGRES_PASSWORD=$(cat "${POSTGRES_PASSWORD_FILE}")
+fi
+
+if [ -z "${POSTGRES_PASSWORD}" ]; then
+    echo "ERROR: POSTGRES_PASSWORD or POSTGRES_PASSWORD_FILE must be set"
+    exit 1
+fi
+
 echo "Starting database backup at $(date)"
 
 # Create backup directory if it doesn't exist

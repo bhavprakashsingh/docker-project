@@ -24,14 +24,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
+    mem_limit: 256m
+    cpus: 0.5
     logging:
       driver: "json-file"
       options:
@@ -60,14 +54,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 1G
+    mem_limit: 2g
+    cpus: 2
     logging:
       driver: "json-file"
       options:
@@ -113,28 +101,15 @@ services:
       - frontend
       - backend
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
+    mem_limit: 1g
+    cpus: 1
     logging:
       driver: "json-file"
       options:
@@ -159,20 +134,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
+    mem_limit: 1g
+    cpus: 1
     logging:
       driver: "json-file"
       options:
@@ -183,9 +146,10 @@ services:
   backup:
     image: postgres:16-alpine
     restart: "no"
+    profiles: ["backup"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: ${POSTGRES_DB}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
     volumes:
@@ -194,14 +158,12 @@ services:
     networks:
       - backend
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     entrypoint: ["/bin/sh", "/backup.sh"]
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
+    mem_limit: 256m
+    cpus: 0.5
+    secrets:
+      - postgres_password
 
 networks:
   frontend:
@@ -230,4 +192,4 @@ secrets:
   jwt_refresh_secret:
     file: ./secrets/jwt_refresh_secret.txt
 
-# Made with Bob
+

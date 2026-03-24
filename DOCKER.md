@@ -73,7 +73,10 @@ Clears and repopulates DB; do not run on production data.
 - **pgAdmin cannot connect**: use host `db` (not localhost), port `5432`, and credentials from `.env`.
 - **Ports already in use**: change `BACKEND_PORT`/`FRONTEND_PORT`/`PGADMIN_PORT` in `.env` and rerun `docker compose up -d`.
 
+
 docker compose exec db psql -U postgres -d realestate
+
+docker compose up --scale backend=2 --scale frontend=2
 
 ## 9) Security
 - Replace placeholder secrets before exposing publicly.
