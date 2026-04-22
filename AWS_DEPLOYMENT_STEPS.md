@@ -160,7 +160,21 @@ docker compose --env-file .env.production up -d
 ```
 
 
-### 4. Verify
-- Check containers: `docker compose ps`
-- Check logs: `docker compose logs -f`
-- Open Browser: `https://your-domain.com`
+
+---
+
+## 🔍 Part 3: Resource Inventory & Cleanup
+
+### 1. List All Active Resources
+You can use the inventory script to see exactly what you have running in `us-east-1`:
+
+```bash
+# From your local terminal
+bash scripts/list-resources.sh
+```
+
+### 2. Cleanup (When done with testing)
+If you want to delete everything to avoid costs, follow this order:
+1.  **Terminate EC2**: `aws ec2 terminate-instances --instance-ids $INSTANCE_ID`
+2.  **Delete Volumes**: `aws ec2 delete-volume --volume-id $VOL_DB`
+3.  **Delete VPC**: (Requires deleting Subnets, IGW, and SG first)
