@@ -140,28 +140,59 @@ mkdir -p "$CERT_PATH"
 chmod 755 "$CERT_PATH"
 echo -e "${GREEN}✅ Certificate directory created: $CERT_PATH${NC}"
 
-# Install Certbot
+# Install Certbot (without nginx)
 echo -e "\n${YELLOW}[2/5] Installing Certbot...${NC}"
-apt-get install -y certbot python3-certbot-nginx > /dev/null 2>&1
+apt-get install -y certbot > /dev/null 2>&1
 echo -e "${GREEN}✅ Certbot installed: $(certbot --version)${NC}"
 
 # Generate SSL certificate
 echo -e "\n${YELLOW}[3/5] Generating SSL certificate...${NC}"
+echo -e "${BLUE}   Domain: $DOMAIN${NC}"
+echo -e "${BLUE}   Email: $EMAIL${NC}"
+echo ""
+
+# Check if port 80 is available
+if netstat -tuln | grep -q ':80 '; then
+    echo -e "${RED}❌ Port 80 is already in use!${NC}"
+    echo -e "${YELLOW}   Stop any service using port 80 before running certbot${NC}"
+    echo -e "${YELLOW}   Check with: sudo netstat -tuln | grep :80${NC}"
+    exit 1
+fi
+
+# Run certbot with visible output
 certbot certonly \
     --standalone \
     --agree-tos \
     --no-eff-email \
     --email "$EMAIL" \
     -d "$DOMAIN" \
-    --cert-path "$CERT_PATH" \
-    --non-interactive \
-    --force-renewal > /dev/null 2>&1
+    --non-interactive
 
-if [ -f "$CERT_PATH/live/$DOMAIN/fullchain.pem" ]; then
-    echo -e "${GREEN}✅ SSL certificate generated${NC}"
-    echo -e "   Certificate: $CERT_PATH/live/$DOMAIN/fullchain.pem"
+CERTBOT_EXIT_CODE=$?
+
+if [ $CERTBOT_EXIT_CODE -eq 0 ] && [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    echo -e "${GREEN}✅ SSL certificate generated successfully${NC}"
+    
+    # Copy to EBS mount
+    echo -e "${YELLOW}   Copying certificate to EBS mount...${NC}"
+    mkdir -p "$CERT_PATH/live"
+    mkdir -p "$CERT_PATH/archive"
+    cp -r "/etc/letsencrypt/live/$DOMAIN" "$CERT_PATH/live/"
+    cp -r /etc/letsencrypt/archive/* "$CERT_PATH/archive/" 2>/dev/null || true
+    chown -R nobody:nogroup "$CERT_PATH"
+    echo -e "${GREEN}   ✅ Certificate copied to: $CERT_PATH/live/$DOMAIN/${NC}"
 else
-    echo -e "${RED}❌ Certificate generation failed${NC}"
+    echo -e "${RED}❌ Certificate generation failed (exit code: $CERTBOT_EXIT_CODE)${NC}"
+    echo ""
+    echo -e "${YELLOW}Common issues:${NC}"
+    echo "  1. DNS not pointing to this server"
+    echo "     - Check: dig $DOMAIN +short"
+    echo "     - Should return this server's IP"
+    echo "  2. Port 80 blocked by firewall"
+    echo "     - Check security groups allow port 80"
+    echo "  3. Domain not accessible from internet"
+    echo "     - Test: curl http://$DOMAIN"
+    echo ""
     exit 1
 fi
 
