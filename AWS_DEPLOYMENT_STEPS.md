@@ -70,6 +70,11 @@ MEDIA_BUCKET="real-estate-media-$(date +%s)"
 aws s3api create-bucket --bucket $DOCS_BUCKET --region us-east-1
 aws s3api create-bucket --bucket $MEDIA_BUCKET --region us-east-1
 
+# 12.1 Add Lifecycle Policy (Auto-delete files after 30 days / 1 month)
+# Applies to both Docs and Media buckets
+aws s3api put-bucket-lifecycle-configuration --bucket $DOCS_BUCKET --lifecycle-configuration '{"Rules":[{"Expiration":{"Days":30},"Status":"Enabled","Filter":{"Prefix":""},"ID":"OneMonthRetention"}]}'
+aws s3api put-bucket-lifecycle-configuration --bucket $MEDIA_BUCKET --lifecycle-configuration '{"Rules":[{"Expiration":{"Days":30},"Status":"Enabled","Filter":{"Prefix":""},"ID":"OneMonthRetention"}]}'
+
 # 13. Create IAM User for Application
 aws iam create-user --user-name real-estate-app-user
 
