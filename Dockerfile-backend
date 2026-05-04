@@ -1,0 +1,43 @@
+# Stage 1: Install dependencies
+FROM node:20-slim AS deps
+WORKDIR /app
+
+# bcrypt requires native build tools; openssl required by Prisma
+RUN apt-get update && apt-get install -y python3 make g++ openssl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+COPY prisma ./prisma
+RUN npm ci
+RUN npx prisma generate
+
+# Stage 2: Build TypeScript
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
+COPY . .
+RUN npm run build
+RUN npx tsc --project tsconfig.seed.json
+
+# Stage 3: Production runtime
+FROM node:20-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN apt-get update && apt-get install -y openssl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs expressjs
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist-seed ./dist-seed
+COPY --from=builder /app/prisma ./prisma
+COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+
+USER expressjs
+
+EXPOSE 5000
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist-seed/prisma/seed.js && node dist/index.js"]

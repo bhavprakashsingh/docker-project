@@ -60,6 +60,75 @@ PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Rese
 echo "Public IP: $PUBLIC_IP"
 ```
 
+### 4. S3, CloudFront & IAM Setup (Storage & CDN)
+```bash
+# Set your bucket names (must be globally unique)
+DOCS_BUCKET="real-estate-docs-$(date +%s)"
+MEDIA_BUCKET="real-estate-media-$(date +%s)"
+
+# 12. Create S3 Buckets
+aws s3api create-bucket --bucket $DOCS_BUCKET --region us-east-1
+aws s3api create-bucket --bucket $MEDIA_BUCKET --region us-east-1
+
+# 13. Create IAM User for Application
+aws iam create-user --user-name real-estate-app-user
+
+# 14. Create Access Keys (SAVE THIS OUTPUT!)
+# The output contains AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+aws iam create-access-key --user-name real-estate-app-user
+
+# 15. Attach IAM Policy to User for S3 and CloudFront Access
+aws iam put-user-policy --user-name real-estate-app-user --policy-name RealEstateAppAccess --policy-document '{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "arn:aws:s3:::'''$DOCS_BUCKET'''",
+        "arn:aws:s3:::'''$DOCS_BUCKET'''/*",
+        "arn:aws:s3:::'''$MEDIA_BUCKET'''",
+        "arn:aws:s3:::'''$MEDIA_BUCKET'''/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetDistribution"
+      ],
+      "Resource": "*"
+    }
+  ]
+}'
+
+# 16. Create CloudFront Distribution for Media Bucket
+# This creates a basic distribution. The DomainName output will be your CLOUDFRONT_URL.
+aws cloudfront create-distribution --origin-domain-name ${MEDIA_BUCKET}.s3.us-east-1.amazonaws.com --query 'Distribution.DomainName' --output text
+
+# ==========================================================
+# 📌 IMPORTANT: UPDATE YOUR .ENV FILE
+# ==========================================================
+# After running the above commands, update your .env variables:
+# AWS_ACCESS_KEY_ID = <AccessKeyId from Step 14>
+# AWS_SECRET_ACCESS_KEY = <SecretAccessKey from Step 14>
+# AWS_REGION = us-east-1
+# S3_DOCS_BUCKET = <Output of: echo $DOCS_BUCKET>
+# S3_MEDIA_BUCKET = <Output of: echo $MEDIA_BUCKET>
+# CLOUDFRONT_URL = https://<DomainName from Step 16>
+
+# ⚠️ NOTE on CloudFront & S3 Security:
+# To allow CloudFront to read your private S3 bucket, set up OAC in the AWS Console:
+# 1. CloudFront -> Distributions -> Select yours
+# 2. Origins -> Edit -> Origin access: "Origin access control settings" -> Create control setting
+# 3. Save, then copy the generated policy and paste it in S3 -> $MEDIA_BUCKET -> Permissions -> Bucket Policy
+```
 
 ---
 
