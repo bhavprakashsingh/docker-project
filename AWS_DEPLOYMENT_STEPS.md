@@ -55,9 +55,13 @@ aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region us-east-1
 aws ec2 attach-volume --volume-id $VOL_DB --instance-id $INSTANCE_ID --device /dev/sdf --region us-east-1
 aws ec2 attach-volume --volume-id $VOL_SSL --instance-id $INSTANCE_ID --device /dev/sdg --region us-east-1
 
-# 11. Get Public IP
-PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text --region us-east-1)
-echo "Public IP: $PUBLIC_IP"
+# 11. Allocate and Associate Elastic IP (Permanent IP)
+ALLOCATION_ID=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text --region us-east-1)
+aws ec2 associate-address --instance-id $INSTANCE_ID --allocation-id $ALLOCATION_ID --region us-east-1
+
+# 11.1 Get the Permanent Public IP
+PUBLIC_IP=$(aws ec2 describe-addresses --allocation-ids $ALLOCATION_ID --query 'Addresses[0].PublicIp' --output text --region us-east-1)
+echo "Permanent Public IP: $PUBLIC_IP"
 ```
 
 ### 4. S3, CloudFront & IAM Setup (Storage & CDN)
@@ -249,6 +253,7 @@ bash scripts/list-resources.sh
 
 ### 2. Cleanup (When done with testing)
 If you want to delete everything to avoid costs, follow this order:
-1.  **Terminate EC2**: `aws ec2 terminate-instances --instance-ids $INSTANCE_ID`
-2.  **Delete Volumes**: `aws ec2 delete-volume --volume-id $VOL_DB`
-3.  **Delete VPC**: (Requires deleting Subnets, IGW, and SG first)
+1.  **Release Elastic IP**: `aws ec2 release-address --allocation-id $ALLOCATION_ID --region us-east-1` (Release to avoid charges for unused IPs)
+2.  **Terminate EC2**: `aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region us-east-1`
+3.  **Delete Volumes**: `aws ec2 delete-volume --volume-id $VOL_DB --region us-east-1`
+4.  **Delete VPC**: (Requires deleting Subnets, IGW, and SG first)
