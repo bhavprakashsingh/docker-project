@@ -319,19 +319,19 @@ sudo bash ~/real-estate/docker-project/scripts/setup-all.sh test.plotchoice.com 
 cd ~/real-estate/docker-project
 
 # Verify configuration
-docker compose config
+docker compose --env-file .env.production config
 
 # Pull images (if using registry)
-docker compose pull
+docker compose --env-file .env.production pull
 
 # Start services
-docker compose up -d
+docker compose --env-file .env.production up -d
 
 # Check status
-docker compose ps
+docker compose --env-file .env.production ps
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env.production logs -f
 ```
 
 **Expected output**:
@@ -352,7 +352,7 @@ frontend-app        real-estate-frontend:latest        Up (healthy)
 ### 7.1: Check All Services Running
 
 ```bash
-docker compose ps
+docker compose --env-file .env.production ps
 # All should show "Up" status
 ```
 
@@ -379,14 +379,14 @@ echo | openssl s_client -servername test.plotchoice.com \
 ### 7.4: Verify Database
 
 ```bash
-docker compose exec postgres psql -U postgres -d land_marketplace -c "SELECT 1;"
+docker compose --env-file .env.production exec postgres psql -U postgres -d land_marketplace -c "SELECT 1;"
 # Should return: 1
 ```
 
 ### 7.5: Check Logs for Errors
 
 ```bash
-docker compose logs --tail=50
+docker compose --env-file .env.production logs --tail=50
 # Look for any ERROR or FATAL messages
 ```
 
@@ -398,7 +398,7 @@ docker compose logs --tail=50
 
 ```bash
 # Check logs
-docker compose logs
+docker compose --env-file .env.production logs
 
 # Check EBS volumes
 df -h | grep /mnt/ebs
@@ -414,7 +414,7 @@ cat .env.production | grep POSTGRES_PASSWORD
 ls -la /mnt/ebs/certs/live/test.plotchoice.com/
 
 # Check Nginx can access it
-docker compose exec nginx ls -la /etc/letsencrypt/live/test.plotchoice.com/
+docker compose --env-file .env.production exec nginx ls -la /etc/letsencrypt/live/test.plotchoice.com/
 
 # Regenerate if needed
 sudo certbot certonly --standalone -d test.plotchoice.com
@@ -424,13 +424,13 @@ sudo certbot certonly --standalone -d test.plotchoice.com
 
 ```bash
 # Check Postgres is running
-docker compose ps postgres
+docker compose --env-file .env.production ps postgres
 
 # Check logs
-docker compose logs postgres
+docker compose --env-file .env.production logs postgres
 
 # Verify password in .env.production matches
-docker compose exec postgres psql -U postgres -d land_marketplace
+docker compose --env-file .env.production exec postgres psql -U postgres -d land_marketplace
 ```
 
 ### Port Already in Use
@@ -451,17 +451,17 @@ sudo systemctl stop httpd  # or apache2, nginx, etc.
 
 ```bash
 # Check service status
-docker compose ps
+docker compose --env-file .env.production ps
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env.production logs -f
 
 # Restart a service
-docker compose restart backend
+docker compose --env-file .env.production restart backend
 
 # Update to latest images
-docker compose pull
-docker compose up -d
+docker compose --env-file .env.production pull
+docker compose --env-file .env.production up -d
 ```
 
 ### Weekly Maintenance
@@ -475,7 +475,7 @@ docker system df
 docker system prune -a
 
 # Backup database
-docker compose exec postgres pg_dump -U postgres land_marketplace > backup_$(date +%Y%m%d).sql
+docker compose --env-file .env.production exec postgres pg_dump -U postgres land_marketplace > backup_$(date +%Y%m%d).sql
 ```
 
 ### Monthly Tasks
@@ -489,7 +489,7 @@ sudo yum update -y  # Amazon Linux
 sudo systemctl status certbot-renew.timer
 
 # Review logs for issues
-docker compose logs --since 30d | grep -i error
+docker compose --env-file .env.production logs --since 30d | grep -i error
 ```
 
 ---
@@ -522,22 +522,22 @@ See the Troubleshooting section in [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md#-
 
 ```bash
 # View all services
-docker compose ps
+docker compose --env-file .env.production ps
 
 # Restart everything
-docker compose restart
+docker compose --env-file .env.production restart
 
 # Stop everything
-docker compose down
+docker compose --env-file .env.production down
 
 # Start everything
-docker compose up -d
+docker compose --env-file .env.production up -d
 
 # View logs
-docker compose logs -f [service-name]
+docker compose --env-file .env.production logs -f [service-name]
 
 # Execute command in container
-docker compose exec [service-name] [command]
+docker compose --env-file .env.production exec [service-name] [command]
 ```
 
 ---
@@ -550,7 +550,7 @@ Your deployment is successful when:
 ✅ Website loads at https://test.plotchoice.com  
 ✅ API responds at https://test.plotchoice.com/api/health  
 ✅ SSL certificate is valid (green padlock in browser)  
-✅ No errors in `docker compose logs`  
+✅ No errors in `docker compose --env-file .env.production logs`  
 ✅ Database accepts connections  
 ✅ EBS volumes mounted and persisting data  
 
@@ -954,7 +954,7 @@ grep "JWT_ACCESS_SECRET=" .env.production
 
 # Check Docker can see the variables
 cd ~/real-state/docker-project
-docker compose config | grep "POSTGRES_PASSWORD"
+docker compose --env-file .env.production config | grep "POSTGRES_PASSWORD"
 ```
 
 **Verify directory structure on EC2**:
@@ -985,7 +985,7 @@ ls -la ~/real-state/docker-project/nginx/conf.d/
 **1. Validate docker-compose.yml syntax**:
 ```bash
 cd ~/real-state/docker-project
-docker compose config
+docker compose --env-file .env.production config
 ```
 
 This shows the complete configuration that will be deployed. Check for:
@@ -1021,7 +1021,7 @@ services:
 
 **2. Check if docker images are available**:
 ```bash
-docker compose config --services
+docker compose --env-file .env.production config --services
 # Should list: nginx, postgres, backend, frontend
 ```
 
@@ -1031,7 +1031,7 @@ docker compose config --services
 docker compose build
 
 # OR to pull from registry:
-docker compose pull
+docker compose --env-file .env.production pull
 ```
 
 This downloads images without running containers. It will show:
@@ -1044,7 +1044,7 @@ If any image fails to pull, you'll see an error, which means images aren't avail
 
 **4. Verify environment variables are loaded**:
 ```bash
-docker-compose config | grep -A 20 "environment:"
+docker compose --env-file .env.production config | grep -A 20 "environment:"
 ```
 
 Should show all variables from `.env.production` like:
@@ -1095,11 +1095,11 @@ Each should show: `Status: Downloaded newer image` or `Status: Image is up to da
 ```bash
 # Complete validation script (copy & paste all at once):
 echo "=== Validating Configuration ==="
-docker compose config > /dev/null && echo "✅ docker-compose.yml is valid" || echo "❌ Invalid YAML syntax"
+docker compose --env-file .env.production config > /dev/null && echo "✅ docker-compose.yml is valid" || echo "❌ Invalid YAML syntax"
 
 echo ""
 echo "=== Checking Services ==="
-docker compose config --services
+docker compose --env-file .env.production config --services
 
 echo ""
 echo "=== Verifying Volume Mount Points ==="
@@ -1111,7 +1111,7 @@ ls -la /mnt/ebs/certs/live/test.plotchoice.com/ && echo "✅ SSL certificates fo
 
 echo ""
 echo "=== Environment Variables Sample ==="
-docker compose config | grep "DOMAIN:" || echo "❌ Environment variables not loaded"
+docker compose --env-file .env.production config | grep "DOMAIN:" || echo "❌ Environment variables not loaded"
 
 echo ""
 echo "=== Docker Ready? ==="
@@ -1136,13 +1136,13 @@ docker compose version && echo "✅ Docker Compose installed" || echo "❌ Docke
 
 **Start all services**:
 ```bash
-docker compose up -d
+docker compose --env-file .env.production up -d
 ```
 
 **Wait for services to start** (first start takes 30-45 seconds):
 ```bash
 sleep 10
-docker compose ps
+docker compose --env-file .env.production ps
 ```
 
 Expected output:
@@ -1156,7 +1156,7 @@ postgres-db       postgres:16          Up 3 minutes
 
 **Check logs for errors**:
 ```bash
-docker compose logs --tail=50
+docker compose --env-file .env.production logs --tail=50
 ```
 
 Should see no errors (warnings about migrations are normal)
@@ -1171,7 +1171,7 @@ Should see no errors (warnings about migrations are normal)
 
 **1. Check all services are running**:
 ```bash
-docker compose ps
+docker compose --env-file .env.production ps
 # All should show "Up"
 ```
 
@@ -1197,7 +1197,7 @@ echo | openssl s_client -servername test.plotchoice.com \
 
 **5. Check database is accessible**:
 ```bash
-docker compose exec postgres pg_isready -U postgres
+docker compose --env-file .env.production exec postgres pg_isready -U postgres
 # Should show "accepting connections"
 ```
 
@@ -1225,18 +1225,18 @@ No SSL warnings should appear
 **Check logs**:
 ```bash
 # All services
-docker compose logs -f
+docker compose --env-file .env.production logs -f
 
 # Specific service
-docker compose logs backend
-docker compose logs postgres
-docker compose logs nginx
+docker compose --env-file .env.production logs backend
+docker compose --env-file .env.production logs postgres
+docker compose --env-file .env.production logs nginx
 ```
 
 **Restart all services**:
 ```bash
-docker compose down
-docker compose up -d
+docker compose --env-file .env.production down
+docker compose --env-file .env.production up -d
 ```
 
 **See Troubleshooting section below for specific errors**
@@ -1249,21 +1249,21 @@ docker compose up -d
 
 **View logs**:
 ```bash
-docker-compose logs -f          # Follow all logs
-docker-compose logs --tail=100  # Last 100 lines
+docker compose --env-file .env.production logs -f          # Follow all logs
+docker compose --env-file .env.production logs --tail=100  # Last 100 lines
 ```
 
 **Check service status**:
 ```bash
-docker-compose ps
+docker compose --env-file .env.production ps
 docker stats                    # Resource usage
 ```
 
 **Quick commands**:
 ```bash
-docker-compose up -d            # Start all
-docker-compose down             # Stop all
-docker-compose restart backend  # Restart one service
+docker compose --env-file .env.production up -d            # Start all
+docker compose --env-file .env.production down             # Stop all
+docker compose --env-file .env.production restart backend  # Restart one service
 ```
 
 ### Weekly Tasks
@@ -1282,7 +1282,7 @@ df -h | grep /mnt/ebs
 
 **Check system logs**:
 ```bash
-docker-compose logs | grep -i error
+docker compose --env-file .env.production logs | grep -i error
 # Should show minimal errors
 ```
 
@@ -1301,7 +1301,7 @@ sudo tail -20 /var/log/letsencrypt/letsencrypt.log
 
 **Test database backup**:
 ```bash
-docker-compose exec postgres pg_dump -U postgres -d land_marketplace > /tmp/test_backup.sql
+docker compose --env-file .env.production exec postgres pg_dump -U postgres -d land_marketplace > /tmp/test_backup.sql
 ls -lh /tmp/test_backup.sql
 ```
 
@@ -1338,7 +1338,7 @@ sudo fsck -n /dev/nvme1n1  # Check filesystem (don't use -y)
 
 **Check logs**:
 ```bash
-docker-compose logs
+docker compose --env-file .env.production logs
 ```
 
 **Common causes**:
@@ -1349,9 +1349,9 @@ docker-compose logs
 
 **Solution**:
 ```bash
-docker-compose down
+docker compose --env-file .env.production down
 # Fix the issue
-docker-compose up -d
+docker compose --env-file .env.production up -d
 ```
 
 ### Problem: SSL certificate error
@@ -1371,20 +1371,20 @@ docker exec nginx-server ls -la /etc/letsencrypt/live/test.plotchoice.com/
 ```bash
 sudo certbot renew --force-renewal
 sudo cp -r /etc/letsencrypt/live/test.plotchoice.com /mnt/ebs/certs/live/
-docker-compose restart nginx-server
+docker compose --env-file .env.production restart nginx-server
 ```
 
 ### Problem: Database connection error
 
 **Check PostgreSQL is running**:
 ```bash
-docker-compose ps postgres
+docker compose --env-file .env.production ps postgres
 # Should show "Up"
 ```
 
 **Test database connection**:
 ```bash
-docker-compose exec postgres psql -U postgres -c "SELECT 1"
+docker compose --env-file .env.production exec postgres psql -U postgres -c "SELECT 1"
 # Should return "1"
 ```
 
@@ -1396,14 +1396,14 @@ ls -la /mnt/ebs/postgres/base/
 
 **Verify environment variables**:
 ```bash
-docker-compose config | grep POSTGRES
+docker compose --env-file .env.production config | grep POSTGRES
 ```
 
 ### Problem: Backend/Frontend not communicating
 
 **Check backend logs**:
 ```bash
-docker-compose logs backend
+docker compose --env-file .env.production logs backend
 # Look for connection errors
 ```
 
@@ -1415,13 +1415,13 @@ docker exec nginx-server curl http://backend:5000/health
 
 **Verify environment variables**:
 ```bash
-docker-compose config
+docker compose --env-file .env.production config
 # Check NEXT_PUBLIC_API_URL matches
 ```
 
 **Restart services**:
 ```bash
-docker-compose restart backend frontend
+docker compose --env-file .env.production restart backend frontend
 ```
 
 ### Problem: High disk usage
@@ -1435,7 +1435,7 @@ sudo du -sh /mnt/ebs/certs/*
 **Database getting too large**:
 ```bash
 # Analyze largest tables
-docker-compose exec postgres psql -U postgres -d land_marketplace -c "
+docker compose --env-file .env.production exec postgres psql -U postgres -d land_marketplace -c "
 SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename))
 FROM pg_tables
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC LIMIT 10;"
@@ -1459,7 +1459,7 @@ Verify these before going to production:
 - [ ] SSL certificate is valid (no browser warnings)
 - [ ] Certbot auto-renewal is active: `sudo systemctl status certbot-renew.timer`
 - [ ] Security groups only allow 80/443 from world, 22 from admin IPs
-- [ ] No secrets visible in logs: `docker-compose logs | grep -i password` (should return nothing)
+- [ ] No secrets visible in logs: `docker compose --env-file .env.production logs | grep -i password` (should return nothing)
 - [ ] Regular backups planned and tested
 
 ---
@@ -1468,7 +1468,7 @@ Verify these before going to production:
 
 Your deployment is complete when:
 
-✅ All 4 containers running (`docker-compose ps`)  
+✅ All 4 containers running (`docker compose --env-file .env.production ps`)  
 ✅ HTTPS works on test.plotchoice.com (no SSL warnings)  
 ✅ Frontend loads and responds  
 ✅ Backend API responds to requests  
@@ -1549,7 +1549,7 @@ Your deployment is complete when:
 
 ### What Docker Creates
 
-When you run `docker-compose up -d`, Docker automatically creates:
+When you run `docker compose --env-file .env.production up -d`, Docker automatically creates:
 
 ```
 Containers:
@@ -1622,7 +1622,7 @@ cat ~/real-state/docker-project/.env.production | head -20
 
 ## 📚 File Checklist
 
-Before running `docker-compose up -d`, verify you have:
+Before running `docker compose --env-file .env.production up -d`, verify you have:
 
 - [ ] **docker-compose.yml** present in `~/real-state/docker-project/`
 - [ ] **nginx/conf.d/default.conf** present and has correct domain name
@@ -1633,7 +1633,7 @@ Before running `docker-compose up -d`, verify you have:
 - [ ] `/etc/fstab` has EBS mount entries (for persistence)
 - [ ] Docker is installed and running: `docker ps`
 - [ ] Docker Compose is installed: `docker-compose --version`
-- [ ] All 4 containers can be seen in config: `docker-compose config`
+- [ ] All 4 containers can be seen in config: `docker compose --env-file .env.production config`
 
 ---
 
@@ -1641,23 +1641,23 @@ Before running `docker-compose up -d`, verify you have:
 
 ```bash
 # Start/Stop
-docker-compose up -d                    # Start all
-docker-compose down                     # Stop all
-docker-compose restart <service>        # Restart one
+docker compose --env-file .env.production up -d                    # Start all
+docker compose --env-file .env.production down                     # Stop all
+docker compose --env-file .env.production restart <service>        # Restart one
 
 # Logs
-docker-compose logs -f                  # Follow all
-docker-compose logs <service>           # Single service
-docker-compose logs --tail=100          # Last 100 lines
+docker compose --env-file .env.production logs -f                  # Follow all
+docker compose --env-file .env.production logs <service>           # Single service
+docker compose --env-file .env.production logs --tail=100          # Last 100 lines
 
 # Status
-docker-compose ps                       # Service status
+docker compose --env-file .env.production ps                       # Service status
 docker stats                            # Resource usage
 df -h | grep /mnt/ebs                  # Disk usage
 
 # Database
-docker-compose exec postgres psql -U postgres  # Connect to DB
-docker-compose exec postgres pg_dump -U postgres -d land_marketplace > backup.sql
+docker compose --env-file .env.production exec postgres psql -U postgres  # Connect to DB
+docker compose --env-file .env.production exec postgres pg_dump -U postgres -d land_marketplace > backup.sql
 
 # Certificates
 sudo certbot certificates               # List certs
@@ -1675,20 +1675,20 @@ docker volume prune                     # Clean volumes
 
 **Check error logs first**:
 ```bash
-docker-compose logs -f
+docker compose --env-file .env.production logs -f
 ```
 
 **Verify each component**:
 1. EBS mounted? → `df -h | grep /mnt/ebs`
 2. Cert exists? → `ls -la /mnt/ebs/certs/live/test.plotchoice.com/`
-3. Services running? → `docker-compose ps`
+3. Services running? → `docker compose --env-file .env.production ps`
 4. Firewall open? → Check AWS Security Groups
 
 **Restart if stuck**:
 ```bash
-docker-compose down
-docker-compose up -d
-docker-compose logs -f
+docker compose --env-file .env.production down
+docker compose --env-file .env.production up -d
+docker compose --env-file .env.production logs -f
 ```
 
 ---
